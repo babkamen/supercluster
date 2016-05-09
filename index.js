@@ -20,7 +20,8 @@ SuperCluster.prototype = {
         radius: 40,   // cluster radius in pixels
         extent: 512,  // tile extent (radius is calculated relative to it)
         nodeSize: 64, // size of the KD-tree leaf node, affects performance
-        log: false    // whether to log timing info
+        log: false,    // whether to log timing info
+        moreThan: 2 //count of points to create cluster
     },
 
     load: function (points) {
@@ -136,7 +137,7 @@ SuperCluster.prototype = {
                 }
             }
 
-            clusters.push(foundNeighbors ? createCluster(wx / numPoints, wy / numPoints, numPoints, -1) : p);
+            clusters.push(foundNeighbors&&numPoints>this.options.moreThan ? createCluster(wx / numPoints, wy / numPoints, numPoints, -1) : p);
         }
 
         return clusters;
