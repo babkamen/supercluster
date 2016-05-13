@@ -15,16 +15,16 @@ function SuperCluster(options) {
 
 SuperCluster.prototype = {
     options: {
-        minZoom: 0,   // min zoom to generate clusters on
-        maxZoom: 16,  // max zoom level to cluster the points on
-        radius: 40,   // cluster radius in pixels
-        extent: 512,  // tile extent (radius is calculated relative to it)
+        minZoom: 0, // min zoom to generate clusters on
+        maxZoom: 16, // max zoom level to cluster the points on
+        radius: 40, // cluster radius in pixels
+        extent: 512, // tile extent (radius is calculated relative to it)
         nodeSize: 64, // size of the KD-tree leaf node, affects performance
-        log: false,    // whether to log timing info
+        log: false, // whether to log timing info
         moreThan: 2 //count of points to create cluster
     },
 
-    load: function (points) {
+    load: function(points) {
         var log = this.options.log;
 
         if (log) console.time('total time');
@@ -59,18 +59,21 @@ SuperCluster.prototype = {
         return this;
     },
 
-    getClusters: function (bbox, zoom) {
-        var tree = this.trees[this._limitZoom(zoom)];
+    getClusters: function(bbox, zoom) {
+        var limitZoom = this._limitZoom(zoom);
+        var tree = this.trees[limitZoom];
         var ids = tree.range(lngX(bbox[0]), latY(bbox[3]), lngX(bbox[2]), latY(bbox[1]));
         var clusters = [];
         for (var i = 0; i < ids.length; i++) {
             var c = tree.points[ids[i]];
-            clusters.push(c.id !== -1 ? this.points[c.id] : getClusterJSON(c));
+            clusters.push(c.id !== -1 ?
+                this.points[c.id] :
+                getClusterJSON(c));
         }
         return clusters;
     },
 
-    getTile: function (z, x, y) {
+    getTile: function(z, x, y) {
         var z2 = Math.pow(2, z);
         var extent = this.options.extent;
         var p = this.options.radius / extent;
@@ -90,10 +93,12 @@ SuperCluster.prototype = {
             var c = tree.points[ids[i]];
             var feature = {
                 type: 1,
-                geometry: [[
-                    Math.round(extent * (c.x * z2 - x)),
-                    Math.round(extent * (c.y * z2 - y))
-                ]],
+                geometry: [
+                    [
+                        Math.round(extent * (c.x * z2 - x)),
+                        Math.round(extent * (c.y * z2 - y))
+                    ]
+                ],
                 tags: c.id !== -1 ? this.points[c.id].properties : getClusterProperties(c)
             };
             tile.features.push(feature);
@@ -101,11 +106,11 @@ SuperCluster.prototype = {
         return tile;
     },
 
-    _limitZoom: function (z) {
+    _limitZoom: function(z) {
         return Math.max(this.options.minZoom, Math.min(z, this.options.maxZoom + 1));
     },
 
-    _cluster: function (points, zoom) {
+    _cluster: function(points, zoom) {
         var clusters = [];
         var r = this.options.radius / (this.options.extent * Math.pow(2, zoom));
 
@@ -137,7 +142,7 @@ SuperCluster.prototype = {
                 }
             }
 
-            clusters.push(foundNeighbors&&numPoints>this.options.moreThan ? createCluster(wx / numPoints, wy / numPoints, numPoints, -1) : p);
+            clusters.push(foundNeighbors && numPoints > this.options.moreThan ? createCluster(wx / numPoints, wy / numPoints, numPoints, -1) : p);
         }
 
         return clusters;
@@ -154,30 +159,23 @@ function createCluster(x, y, numPoints, id) {
     };
 }
 
+function round(i) {
+    return Math.round(i * 10e6) / 10e6
+}
+
 function createPointCluster(p, i) {
-    var coords = p.geometry.coordinates;
+    var coords = [p.X, p.Y];
     return createCluster(lngX(coords[0]), latY(coords[1]), 1, i);
 }
 
 function getClusterJSON(cluster) {
-    return {
-        type: 'Feature',
-        properties: getClusterProperties(cluster),
-        geometry: {
-            type: 'Point',
-            coordinates: [xLng(cluster.x), yLat(cluster.y)]
-        }
-    };
-}
-
-function getClusterProperties(cluster) {
     var count = cluster.numPoints;
     var abbrev = count >= 10000 ? Math.round(count / 1000) + 'k' :
-                 count >= 1000 ? (Math.round(count / 100) / 10) + 'k' : count;
+        count >= 1000 ? (Math.round(count / 100) / 10) + 'k' : count;
     return {
-        cluster: true,
-        point_count: count,
-        point_count_abbreviated: abbrev
+        C: abbrev,
+        X: round(xLng(cluster.x)),
+        Y: round(yLat(cluster.y))
     };
 }
 
@@ -185,17 +183,19 @@ function getClusterProperties(cluster) {
 function lngX(lng) {
     return lng / 360 + 0.5;
 }
+
 function latY(lat) {
     var sin = Math.sin(lat * Math.PI / 180),
         y = (0.5 - 0.25 * Math.log((1 + sin) / (1 - sin)) / Math.PI);
     return y < 0 ? 0 :
-           y > 1 ? 1 : y;
+        y > 1 ? 1 : y;
 }
 
 // spherical mercator to longitude/latitude
 function xLng(x) {
     return (x - 0.5) * 360;
 }
+
 function yLat(y) {
     var y2 = (180 - y * 360) * Math.PI / 180;
     return 360 * Math.atan(Math.exp(y2)) / Math.PI - 90;
@@ -209,6 +209,7 @@ function extend(dest, src) {
 function getX(p) {
     return p.x;
 }
+
 function getY(p) {
     return p.y;
 }
