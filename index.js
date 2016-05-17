@@ -174,6 +174,7 @@ function getClusterJSON(cluster) {
         count >= 1000 ? (Math.round(count / 100) / 10) + 'k' : count;
     return {
         C: abbrev,
+        I: cluster.numPoints+"_"+cluster.x+"_"+cluster.y,
         X: round(xLng(cluster.x)),
         Y: round(yLat(cluster.y))
     };
