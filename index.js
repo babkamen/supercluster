@@ -58,24 +58,11 @@ SuperCluster.prototype = {
 
         return this;
     },
-
-    getClusters: function(bbox, zoom) {
-        var limitZoom = this._limitZoom(zoom);
-        var tree = this.trees[limitZoom];
-        var ids = range(lngX(bbox[0]), latY(bbox[3]), lngX(bbox[2]), latY(bbox[1]));
-        var clusters = [];
-        for (var i = 0; i < ids.length; i++) {
-            var c = tree.points[ids[i]];
-            clusters.push(c.id !== -1 ?
-                c :
-                getClusterJSON(c));
-        }
-        return clusters;
-    },
-    range:function(tree, minX, minY, maxX, maxY) {
+    range: function(tree, minX, minY, maxX, maxY) {
         var ids = tree.ids,
             coords = tree.coords,
             nodeSize = tree.nodeSize;
+        // console.log("In range="+ids.length,coords);
         var stack = [0, ids.length - 1, 0];
         var result = [];
         var x, y;
@@ -116,6 +103,32 @@ SuperCluster.prototype = {
         }
 
         return result;
+    },
+    getClusters: function(bbox, zoom) {
+        var limitZoom = this._limitZoom(zoom);
+        var tree = this.trees[limitZoom];
+        // console.log(tree);
+        var ids = this.range(tree, lngX(bbox[0]), latY(bbox[3]), lngX(bbox[2]), latY(bbox[1]));
+        var clusters = [];
+        for (var i = 0; i < ids.length; i++) {
+            var c = tree.points[ids[i]];
+            if(c.id===-1){
+             console.log("Found clusters")
+        }
+            clusters.push(c.id !== -1 ?
+                this.createObject(c) :
+                getClusterJSON(c));
+        }
+        return clusters;
+    },
+    createObject: function(p) {
+        return {
+            X: p.X,
+            Y: p.Y,
+            I: p.I,
+            B: p.B,
+            C: p.C
+        };
     },
     getTile: function(z, x, y) {
         var z2 = Math.pow(2, z);
@@ -185,7 +198,6 @@ SuperCluster.prototype = {
                     numPoints += b.numPoints;
                 }
             }
-
             clusters.push(foundNeighbors && numPoints > this.options.moreThan ? createCluster(wx / numPoints, wy / numPoints, numPoints, -1) : p);
         }
 
@@ -193,10 +205,12 @@ SuperCluster.prototype = {
     }
 };
 
-function createCluster(x, y, numPoints, id, I, B) {
+function createCluster(x, y, numPoints, id, I, B,X,Y) {
     return {
         x: x, // weighted cluster center
         y: y,
+        X:X,
+        Y:Y,
         zoom: Infinity, // the last zoom the cluster was processed at
         I: I,
         B: B,
@@ -211,7 +225,7 @@ function round(i) {
 
 function createPointCluster(p, i) {
     var coords = [p.X, p.Y];
-    return createCluster(lngX(coords[0]), latY(coords[1]), 1, i, p.I, p.B);
+    return createCluster(lngX(coords[0]), latY(coords[1]), 1, i, p.I, p.B,p.X,p.Y);
 }
 
 function getClusterJSON(cluster) {
