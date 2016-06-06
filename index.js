@@ -112,9 +112,6 @@ SuperCluster.prototype = {
         var clusters = [];
         for (var i = 0; i < ids.length; i++) {
             var c = tree.points[ids[i]];
-            if(c.id===-1){
-             console.log("Found clusters")
-        }
             clusters.push(c.id !== -1 ?
                 this.createObject(c) :
                 getClusterJSON(c));
