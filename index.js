@@ -178,12 +178,11 @@ SuperCluster.prototype = {
             // find all nearby points
             var tree = this.trees[zoom + 1];
             var neighborIds = tree.within(p.x, p.y, r);
-
             var foundNeighbors = false;
             var numPoints = p.numPoints;
             var wx = p.x * numPoints;
             var wy = p.y * numPoints;
-
+            var gobjects=p.gobjects||[p.I];
             for (var j = 0; j < neighborIds.length; j++) {
                 var b = tree.points[neighborIds[j]];
                 // filter out neighbors that are too far or already processed
@@ -193,16 +192,20 @@ SuperCluster.prototype = {
                     wx += b.x * b.numPoints; // accumulate coordinates for calculating weighted center
                     wy += b.y * b.numPoints;
                     numPoints += b.numPoints;
+                    gobjects=gobjects.concat(b.gobjects);
                 }
             }
-            clusters.push(foundNeighbors && numPoints > this.options.moreThan ? createCluster(wx / numPoints, wy / numPoints, numPoints, -1) : p);
+            clusters.push(foundNeighbors && numPoints > this.options.moreThan ? createCluster(wx / numPoints, wy / numPoints, numPoints, -1,null,null,null,null,gobjects) : p);
         }
 
         return clusters;
     }
 };
 
-function createCluster(x, y, numPoints, id, I, B,X,Y) {
+function createCluster(x, y, numPoints, id, I, B,X,Y,gobjects) {
+    if(gobjects==null){
+        gobjects=[I.toString()];
+    }
     return {
         x: x, // weighted cluster center
         y: y,
@@ -212,7 +215,8 @@ function createCluster(x, y, numPoints, id, I, B,X,Y) {
         I: I,
         B: B,
         id: id, // index of the source feature in the original input array
-        numPoints: numPoints
+        numPoints: numPoints,
+        gobjects:gobjects
     };
 }
 
